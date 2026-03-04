@@ -5,7 +5,7 @@ from routes.tubs import tubs_bp
 from routes.experiments import experiments_bp 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder="frontend/dist", static_url_path="")
     CORS(app)
 
     @app.route("/")
