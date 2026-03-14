@@ -46,6 +46,7 @@ const METRICS = [
     table: "sensor_data",
     field: "potassium",
   },
+  { id: "health", label: "Health (sensor)", table: "sensor_data", field: "health" },
   { id: "risk_t", label: "Risk (model)", table: "computed_scores", field: "risk_t" },
   {
     id: "health_t",
@@ -82,7 +83,7 @@ function ExperimentDetails() {
   const [experiment, setExperiment] = useState(null);
   const [tubs, setTubs] = useState([]);
   const [selectedMetricId, setSelectedMetricId] = useState("soil_ph");
-  const [timeframe, setTimeframe] = useState("7d"); // 24h | 7d | 30d
+  const [timeframe, setTimeframe] = useState("7d"); // 24h | 7d | 30d | all
   const [viewMode, setViewMode] = useState("combined"); // combined | tub
   const [activeTubId, setActiveTubId] = useState(null);
 
@@ -94,6 +95,9 @@ function ExperimentDetails() {
   );
 
   const sinceIso = useMemo(() => {
+    if (timeframe === "all") {
+      return new Date(0).toISOString(); // January 1, 1970 - all time
+    }
     const now = Date.now();
     const ms =
       timeframe === "24h"
@@ -156,7 +160,7 @@ function ExperimentDetails() {
     }
 
     const common = metric.table === "sensor_data"
-      ? "tub_id,created_at,soil_ph,soil_moisture,soil_temp,air_temp,air_humidity,nitrogen,phosphorus,potassium"
+      ? "tub_id,created_at,soil_ph,soil_moisture,soil_temp,air_temp,air_humidity,nitrogen,phosphorus,potassium,health"
       : "tub_id,timestamp,health_t,stress_t,risk_t";
 
     const timeField = metric.table === "sensor_data" ? "created_at" : "timestamp";
@@ -371,11 +375,12 @@ function ExperimentDetails() {
                 <select
                   value={timeframe}
                   onChange={(e) => setTimeframe(e.target.value)}
-                  className="mt-1 w-full bg-transparent text-slate-200 text-sm outline-none"
+                  className="mt-1 w-full bg-slate-950/30 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 text-sm outline-none cursor-pointer hover:bg-slate-950/50 transition-colors"
                 >
                   <option value="24h">Last 24 hours</option>
                   <option value="7d">Last 7 days</option>
                   <option value="30d">Last 30 days</option>
+                  <option value="all">All time</option>
                 </select>
               </div>
             </div>
