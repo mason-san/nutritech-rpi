@@ -1,15 +1,19 @@
 services:
   - type: web
-    name: nutritech-rpi
+    name: nutritech-dashboard
     runtime: python
-    rootDir: backend
-
     buildCommand: |
-      pip install -r requirements.txt
-      cd ../frontend/nutritech-dashboard
-      npm install
-      npm run build
-      mkdir -p ../../backend/frontend
-      cp -r dist ../../backend/frontend/
-
-    startCommand: gunicorn "app:create_app()"
+      # 1. Install Backend Dependencies
+      pip install -r backend/requirements.txt
+      # 2. Build Frontend (Baked-in env vars needed here!)
+      cd frontend/nutritech-dashboard && npm install && npm run build
+    startCommand: gunicorn --chdir backend --bind 0.0.0.0:$PORT "app:create_app()"
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
