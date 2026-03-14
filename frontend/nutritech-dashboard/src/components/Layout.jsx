@@ -4,8 +4,8 @@ function Layout({children}){
     return (
         <div className="min-h-screen bg-[#081028] text-slate-100">
             {/* Top Navbar */}
-            <header className="border-b border-slate-800">
-                <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+            <header className="sticky top-0 z-50 border-b border-slate-800 bg-[#081028]/80 backdrop-blur-md">
+                <div className="max-w-7xl mx-auto px-8 py-3 flex items-center justify-between">
 
                     {/* Logo */}
                     <div className="flex items-center gap-3">
@@ -21,10 +21,10 @@ function Layout({children}){
                     <nav className="flex items-center gap-6">
                         <NavLink
                             to="/"
-                            className={({ isActive }) => 
+                            className={({ isActive }) =>
                                 isActive
                                     ? "px-4 py-2  rounded-lg bg-emerald-500 text-black font-medium"
-                                    : "text-slate-400 hober:text-white"
+                                    : "text-slate-400 hover:text-white"
                             }
                         >
                             Tubs
@@ -32,20 +32,35 @@ function Layout({children}){
 
                         <NavLink
                             to="/experiments"
-                            className={({ isActive }) => 
+                            className={({ isActive }) =>
                                 isActive
                                     ? "px-4 py-2  rounded-lg bg-emerald-500 text-black font-medium"
-                                    : "text-slate-400 hober:text-white"
+                                    : "text-slate-400 hover:text-white"
                             }
                         >
-                            Experiments 
+                            Experiments
+                        </NavLink>
+
+                        <NavLink
+                            to="/analytics"
+                            className={({ isActive }) =>
+                                isActive
+                                    ? "px-4 py-2  rounded-lg bg-emerald-500 text-black font-medium"
+                                    : "text-slate-400 hover:text-white"
+                            }
+                        >
+                            ML Analytics
                         </NavLink>
                     </nav>
 
                     {/* Right Size */}
                     <div className="flex items-center gap-6">
-                        <div className="px-3  py-1 rounded-full bg-slate-800 text-sm texxt-emerald-400">
-                            * System Online
+                        <div className="px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-xs text-emerald-400 flex items-center gap-2">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            System Online
                         </div>
 
                         <div className="text-right">

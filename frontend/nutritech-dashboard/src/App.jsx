@@ -3,12 +3,14 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Experiments from "./pages/Experiments";
 import ExperimentDetails from "./pages/ExperimentDetails";
+import Analytics from "./pages/Analytics";
 
 function App(){
   return(
     <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/experiments" element={<Experiments />} />
           <Route
             path="/experiments/:experimentId"

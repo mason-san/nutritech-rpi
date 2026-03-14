@@ -1,0 +1,1 @@
+{"root":["./src/app.jsx","./src/main.jsx","./src/components/layout.jsx","./src/components/pageheader.jsx","./src/pages/experimentdetails.jsx","./src/pages/experiments.jsx","./src/pages/home.jsx","./src/services/api.js","./src/services/dataqueries.js","./src/services/supabaseclient.js"],"version":"5.9.3"}
