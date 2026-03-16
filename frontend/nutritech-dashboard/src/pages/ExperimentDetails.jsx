@@ -17,6 +17,12 @@ import {
   safeDate,
 } from "../services/dataQueries";
 
+/**
+ * METRICS DEFINITION
+ * Central configuration for all sensor and model fields that can be graphed.
+ * Each entry ties a unique ID to a human-readable label and the specific 
+ * backend table/column where the data resides.
+ */
 const METRICS = [
   { id: "soil_ph", label: "pH Levels", table: "sensor_data", field: "soil_ph" },
   {
@@ -61,6 +67,7 @@ const METRICS = [
     field: "stress_t",
   },
 ];
+
 
 function formatDayLabel(iso) {
   const d = safeDate(iso);
@@ -138,10 +145,15 @@ function ExperimentDetails() {
 
       // If we don't have all details yet (e.g. from mapping), fetch them.
       // But we already fetched tubs by experiment_id. Let's merge if needed.
+      /**
+       * FETCH LINKED TUB PROFILES
+       * Ensures we have the labels and metadata for every tub involved.
+       */
       const tubsRes = await queryAnySchema("tubs", (q) => 
         q.select("id,label,soil_type,plant_name,growth_rate,experiment_id,created_at,updated_at")
          .in("id", tubIds)
       );
+
 
       const linked = tubsRes.data ?? [];
       setTubs(linked);

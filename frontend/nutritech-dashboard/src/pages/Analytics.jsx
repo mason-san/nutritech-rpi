@@ -140,7 +140,13 @@ function Analytics() {
         experiments: experimentsRes.error,
       };
 
+      /**
+       * ERROR AGGREGATION
+       * Checks if any of the 6 queries failed (e.g., due to Supabase RLS policies).
+       * We show a debug panel to make it clear which specific table is blocked.
+       */
       const anyError = Object.values(queryErrors).some(Boolean);
+
       if (anyError) {
         // eslint-disable-next-line no-console
         console.error("Analytics data errors:", queryErrors);

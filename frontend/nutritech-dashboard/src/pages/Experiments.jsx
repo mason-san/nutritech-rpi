@@ -4,25 +4,42 @@ import PageHeader from "../components/PageHeader";
 import { fromAnySchema, normalizeSupabaseError } from "../services/dataQueries";
 
 function Experiments() {
+  // --- STATE MANAGEMENT ---
+  // Stores the list of all experiment records from Supabase
   const [experiments, setExperiments] = useState([]);
+  
+  // Stores the mapping table data (links experiment_id to tub_id)
   const [mapping, setMapping] = useState([]);
+  
+  // Loading state to show placeholders during data fetch
   const [loading, setLoading] = useState(true);
+  
+  // Specifically tracks errors for each table to help with debugging RLS or schema issues
   const [errors, setErrors] = useState({});
 
+  // React Router hook for programmatic navigation
   const navigate = useNavigate();
 
+  /**
+   * DATA FETCHING LOGIC
+   * Retrieves experiments and their tub mappings in parallel.
+   */
   const fetchExperiments = async () => {
     setLoading(true);
     setErrors({});
     try {
+      // Promise.all runs both queries concurrently for efficiency
       const [expRes, mapRes] = await Promise.all([
+        // Fetches core metadata for all experiment protocols
         fromAnySchema(
           "experiments",
           "id,title,description,started_at,ended_at,status,created_at,updated_at"
         ),
+        // Fetches the linker table that tells us which tub belongs to which experiment
         fromAnySchema("mapping", "id,experiment_id,tub_id"),
       ]);
 
+      // Normalize errors for display in the Debug panel
       const nextErrors = {
         experiments: normalizeSupabaseError(expRes.error),
         mapping: normalizeSupabaseError(mapRes.error),
@@ -32,23 +49,32 @@ function Experiments() {
       setExperiments(expRes.data ?? []);
       setMapping(mapRes.data ?? []);
     } finally {
+      // Ensure loading state is turned off regardless of success or failure
       setLoading(false);
     }
   };
 
+  // Initial load on component mount
   useEffect(() => {
     fetchExperiments();
   }, []);
 
+  /**
+   * DERIVED DATA: Tub Count per Experiment
+   * We iterate through the mapping table to count how many tubs are assigned to each experiment ID.
+   * useMemo ensures this isn't recalculated on every re-render unless 'mapping' changes.
+   */
   const tubsCountByExperiment = useMemo(() => {
     const m = new Map();
     for (const row of mapping) {
       const k = row.experiment_id;
       if (!k) continue;
+      // Increment count for this experiment_id
       m.set(k, (m.get(k) ?? 0) + 1);
     }
     return m;
   }, [mapping]);
+
 
   const activeCount = useMemo(
     () => experiments.filter((e) => (e.status ?? "").toLowerCase() === "active").length,

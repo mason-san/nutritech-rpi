@@ -25,13 +25,20 @@ function Home() {
   const [activeTubModal, setActiveTubModal] = useState(null);
   const [modalDetails, setModalDetails] = useState(null);
 
+  /**
+   * LOAD DASHBOARD
+   * Core function to fetch all telemetry, status, and experiment metadata.
+   * Runs on mount and on "Refresh" button click.
+   */
   const loadDashboard = async () => {
+    // Unique ID per request to prevent race conditions (stale data overwriting new data)
     const myRequestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     setErrorsByQuery({});
 
     try {
+      // Parallel execution of all required data queries for performance
       const [
         tubsRes,
         sensorRes,
@@ -39,28 +46,34 @@ function Home() {
         tubsDetailsRes,
         sensorDataRes,
       ] = await Promise.all([
+        // 1. Get raw tub IDs
         fromAnySchema("tubs", "id"),
+        // 2. Get active status of sensors
         fromAnySchema(
           "sensor_status",
           "sensor_id,is_active,is_locked,tub_id,last_seen",
           { schemas: ["public", "experiment"] }
         ),
+        // 3. Get ML-computed health/risk scores
         (async () => {
           const res = await fromAnySchema(
             "computed_scores",
             "tub_id,experiment_id,timestamp,health_t,stress_t,risk_t"
           );
           if (res.error) return res;
+          // Sort scores by date descending
           const ordered = [...(res.data ?? [])].sort(
             (a, b) =>
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           );
           return { ...res, data: ordered.slice(0, 200) };
         })(),
+        // 4. Get detailed tub metadata (labels, plant names)
         fromAnySchema(
           "tubs",
           "id,label,soil_type,plant_name,growth_rate,experiment_id,updated_at"
         ),
+        // 5. Get latest sensor telemetry readings
         queryAnySchema("sensor_data", (q) =>
           q
             .select(
@@ -71,7 +84,9 @@ function Home() {
         ),
       ]);
 
+      // If a newer request has already started, discard this result
       if (myRequestId !== requestIdRef.current) return;
+
 
       const tubs = tubsRes.data ?? [];
       const sensorStatus = sensorRes.data ?? [];
@@ -135,14 +150,24 @@ function Home() {
         statusByTub.set(s.tub_id, s);
       }
 
+      /**
+       * DATA MERGING: Creating Tub Cards
+       * This is the most important logic in the dashboard. It merges data from 4 tables:
+       * 1. tubs (metadata like plant_name)
+       * 2. sensor_data (latest physical readings)
+       * 3. computed_scores (latest ML risk/health scores)
+       * 4. sensor_status (active/offline status)
+       */
       const cards = tubsDetails.map((t) => {
-        const s = latestSensorByTub.get(t.id) ?? null;
-        const sc = latestScoreByTub.get(t.id) ?? null;
-        const st = statusByTub.get(t.id) ?? null;
+        const s = latestSensorByTub.get(t.id) ?? null; // Get latest telemetry for this tub
+        const sc = latestScoreByTub.get(t.id) ?? null; // Get latest model inference
+        const st = statusByTub.get(t.id) ?? null;      // Check if it is currently online
+        
         const risk = sc?.risk_t ?? null;
         const health = sc?.health_t ?? null;
         const isOnline = st?.is_active && !st?.is_locked;
 
+        // Visual badges: Green for stable, Red for high risk, Grey for offline
         let badge = "bg-slate-700/40 text-slate-300";
         let badgeText = isOnline ? "ACTIVE" : "OFFLINE";
         if (isOnline && typeof risk === "number" && risk >= 0.7) {
@@ -153,6 +178,7 @@ function Home() {
           badgeText = "ACTIVE";
         }
 
+        // Return a flattened object that the UI components can easily consume
         return {
           id: t.id,
           label: t.label ?? `Tub ${t.id}`,
@@ -174,6 +200,7 @@ function Home() {
           updated_at: s?.created_at ?? t.updated_at ?? null,
         };
       });
+
       setTubCards(cards);
     } catch (e) {
       // eslint-disable-next-line no-console

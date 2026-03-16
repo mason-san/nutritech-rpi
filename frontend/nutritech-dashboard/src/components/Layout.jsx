@@ -19,6 +19,13 @@ function Layout({children}){
 
                     {/* Navigation Tabs */}
                     <nav className="flex items-center gap-6">
+                        <a
+                            href="https://nutritech-dashboard.onrender.com/"
+                            className="text-slate-400 hover:text-white transition-colors"
+                        >
+                            Home
+                        </a>
+
                         <NavLink
                             to="/"
                             className={({ isActive }) =>

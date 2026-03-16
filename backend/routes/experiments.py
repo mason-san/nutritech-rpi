@@ -1,20 +1,27 @@
 """
-    MAIN PAGE FOR LOADING ALL EXPERIMENTS RELATED DATA FROM SUPABASE
-    1. GET all experiments stored in supabase  
-    2. get particular experiment stored in supabase by their id.
+    API Routes for Experiments
+    This module handles all operations related to experiment data stored in Supabase.
+    - Fetching all experiments.
+    - Fetching details for a specific experiment, including its associated tubs.
 """
 
 from flask import Blueprint, jsonify, request
 from services.supabase_service import supabase 
 from datetime import datetime, timedelta
 
+# Create a Blueprint for experiment routes
 experiments_bp = Blueprint("experiments", __name__)
 
 @experiments_bp.route("/", methods=["GET"])
 def get_app_experiments():
-    """This route loads all experiments stored in the supabase"""
+    """
+    GET /api/experiments/
+    Fetches a list of all experiments from the 'experiments' table in the 'experiment' schema.
+    Returns: JSON response containing experiment data sorted by start date.
+    """
 
     try: 
+        # Query Supabase: schema 'experiment', table 'experiments', sorted descending by 'started_at'
         response = (
             supabase
             .schema("experiment")
@@ -29,6 +36,7 @@ def get_app_experiments():
             "data" : response.data
         })
     except Exception as e:
+        # Handle unexpected errors
         return jsonify({
             "message" : "error",
             "message" : str(e)
@@ -36,9 +44,15 @@ def get_app_experiments():
     
 @experiments_bp.route("/<int:experiment_id>", methods=["GET"])
 def get_experiment_details(experiment_id):
-    """This route is used to get the experiment details of a single experiment by their id"""
+    """
+    GET /api/experiments/<id>
+    Fetches detailed information for a single experiment, including:
+    1. Basic experiment metadata.
+    2. The list of Tubs (buckets) mapped to this experiment ID.
+    """
 
     try: 
+        # 1. Fetch core experiment details
         experiment_res = (
             supabase
             .schema("experiment")
@@ -57,7 +71,7 @@ def get_experiment_details(experiment_id):
         
         experiment_data = experiment_res.data
 
-        #Get  tub  ids from mapping table 
+        # 2. Fetch tub_ids from the 'mapping' table that link experiments to tubs
         mapping_res = (
             supabase
             .schema("experiment")
@@ -67,9 +81,11 @@ def get_experiment_details(experiment_id):
             .execute()
         )
 
+        # Extract only the tub_id values into a list
         tub_ids = [row['tub_id'] for row in mapping_res.data]
 
         tubs_data = []
+        # 3. If there are mapped tubs, fetch their detailed records from the 'tubs' table
         if tub_ids:
             tubs_res = (
                 supabase
@@ -82,6 +98,7 @@ def get_experiment_details(experiment_id):
 
             tubs_data = tubs_res.data
         
+        # Combine everything into one final response
         return jsonify({
             "status" : "success",
             "experiment" : experiment_data,
@@ -93,4 +110,5 @@ def get_experiment_details(experiment_id):
             "status" : "error",
             "message" : str(e)
         }), 500
+
     

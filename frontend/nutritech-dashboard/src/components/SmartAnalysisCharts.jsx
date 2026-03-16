@@ -157,6 +157,9 @@ export const NPKHeatmap = ({ data, title, subtitle }) => (
 
 /**
  * RiskMatrix: Maps Health (Productivity) vs Stress (Risk)
+ * Uses a ScatterChart to plot tubs in a 2D space where:
+ * - X-Axis = Risk (Potential for system failure)
+ * - Y-Axis = Productivity (Growth performance)
  */
 export const RiskMatrix = ({ data, title, subtitle }) => (
   <div className="bg-slate-900/50 backdrop-blur-sm p-6 rounded-3xl border border-white/5 flex flex-col transition-all hover:border-rose-500/30">
@@ -202,6 +205,7 @@ export const RiskMatrix = ({ data, title, subtitle }) => (
             {data.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
+                // COLOR LOGIC: Green if high health, Red if high risk, Amber for mid-range
                 fill={entry.y > 70 ? "#10b981" : entry.x > 70 ? "#ef4444" : "#f59e0b"} 
                 strokeWidth={2}
                 stroke="#081028"
@@ -213,15 +217,19 @@ export const RiskMatrix = ({ data, title, subtitle }) => (
     </div>
   </div>
 );
+
 /**
- * Interactive3DGraph: A true Plotly 3D Scatter plot that can be rotated/moved
+ * Interactive3DGraph: A true Plotly 3D Scatter plot
+ * This component dynamically loads the Plotly library from a CDN on mount.
+ * It maps Nutrient, Climate, and Yield quality signals into a 3D coordinate system.
  */
 export const Interactive3DGraph = ({ data, title }) => {
   const containerRef = React.useRef(null);
 
   React.useEffect(() => {
-    // Load Plotly from CDN if not already loaded globally
     const scriptId = "plotly-cdn-script";
+    
+    // Check if script already exists to prevent duplicate loading
     if (!document.getElementById(scriptId)) {
       const script = document.createElement("script");
       script.id = scriptId;
@@ -233,6 +241,9 @@ export const Interactive3DGraph = ({ data, title }) => {
       initPlot();
     }
 
+    /**
+     * INIT PLOT: Configures the 3D scene, axis labels, and color scales.
+     */
     function initPlot() {
       if (!window.Plotly || !containerRef.current) return;
 
@@ -246,7 +257,7 @@ export const Interactive3DGraph = ({ data, title }) => {
           type: 'scatter3d',
           marker: {
             size: 12,
-            color: data.map(d => d.z),
+            color: data.map(d => d.z), // Color derived from the Z-axis (Yield)
             colorscale: 'Viridis',
             opacity: 0.8,
             line: { color: '#10b981', width: 1 }
@@ -258,7 +269,7 @@ export const Interactive3DGraph = ({ data, title }) => {
 
       const layout = {
         title: { text: title, font: { color: '#ffffff', family: 'Inter, sans-serif', size: 16 } },
-        paper_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)', // Transparent background to match theme
         plot_bgcolor: 'rgba(0,0,0,0)',
         margin: { l: 0, r: 0, b: 0, t: 40 },
         scene: {
@@ -266,7 +277,7 @@ export const Interactive3DGraph = ({ data, title }) => {
           yaxis: { title: 'Climate', gridcolor: '#1e293b', zerolinecolor: '#1e293b', color: '#64748b' },
           zaxis: { title: 'Yield', gridcolor: '#1e293b', zerolinecolor: '#1e293b', color: '#64748b' },
           bgcolor: 'rgba(0,0,0,0)',
-          camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } }
+          camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } } // Initial camera angle
         },
         showlegend: false,
         font: { color: '#64748b' }
@@ -280,7 +291,7 @@ export const Interactive3DGraph = ({ data, title }) => {
       window.Plotly.newPlot(containerRef.current, plotlyData, layout, config);
     }
 
-    // Cleanup on unmount
+    // PURGE Plotly instance on unmount to free up memory
     return () => {
       if (window.Plotly && containerRef.current) {
         window.Plotly.purge(containerRef.current);
@@ -301,4 +312,5 @@ export const Interactive3DGraph = ({ data, title }) => {
     </div>
   );
 };
+
 
