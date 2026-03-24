@@ -18,15 +18,6 @@ import { RadarAnalysis, NPKHeatmap, RiskMatrix,
   Interactive3DGraph,
 } from "../components/SmartAnalysisCharts.jsx";
 
-function formatTimeLabel(iso) {
-  if (!iso) return "";
-  const d = safeDate(iso);
-  if (!d) return "";
-  return `${d.getHours().toString().padStart(2, "0")}:${d
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
-}
 
 function Analytics() {
   const [loading, setLoading] = useState(true);
@@ -198,34 +189,18 @@ function Analytics() {
   }, []);
 
   const moistureSeries = useMemo(() => {
-    const safeReadings = processedReadings || [];
-    const hasData = safeReadings.length > 0;
-    if (hasData) {
-      return [...safeReadings]
-        .filter((r) => Boolean(safeDate(r?.timestamp)))
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-        .map((row) => ({
-          time: row.timestamp,
-          label: row.timestamp ? new Date(row.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '?',
-          q_moisture: (row.q_moisture ?? 0.5) * 100,
-          q_climate: (row.q_climate ?? 0.6) * 100,
-          q_nutrient: (row.q_nutrient ?? 0.4) * 100,
-          source: 'Database'
-        }));
-    }
-    // Hardcoded fallback...
-    const now = Date.now();
-    return Array.from({ length: 20 }).map((_, i) => {
-      const ts = new Date(now - (20 - i) * 3600000).toISOString();
-      return {
-        time: ts,
-        label: formatTimeLabel(ts),
-        q_moisture: 45 + Math.sin(i / 2) * 10 + Math.random() * 5,
-        q_climate: 60 + Math.cos(i / 3) * 5 + Math.random() * 5,
-        q_nutrient: 30 + Math.random() * 15,
-        source: 'Hardcoded'
-      };
-    });
+    if (!processedReadings.length) return [];
+    return [...processedReadings]
+      .filter((r) => Boolean(safeDate(r?.timestamp)))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .map((row) => ({
+        time: row.timestamp,
+        label: row.timestamp ? new Date(row.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '?',
+        q_moisture: (row.q_moisture ?? 0) * 100,
+        q_climate: (row.q_climate ?? 0) * 100,
+        q_nutrient: (row.q_nutrient ?? 0) * 100,
+        tub_id: row.tub_id,
+      }));
   }, [processedReadings]);
 
   const healthByTub = useMemo(() => {
@@ -253,37 +228,18 @@ function Analytics() {
 
   const npkHeatmapData = useMemo(() => {
     const metrics = ['Nitrogen', 'Phosphorus', 'Potassium'];
-    const safeReadings = processedReadings || [];
-    const activeTubs = Array.from(new Set(safeReadings.map(r => r.tub_id))).filter(Boolean).slice(0, 5);
-    
-    // If no tubs found in data, use a few hardcoded ones for visualization
-    const tubs = activeTubs.length > 0 ? activeTubs : ['T-Alpha', 'T-Beta', 'T-Gamma'];
+    const activeTubs = Array.from(new Set(processedReadings.map(r => r.tub_id))).filter(Boolean).slice(0, 5);
+    if (activeTubs.length === 0) return [];
     const data = [];
-    
-    tubs.forEach((tubId) => {
+    activeTubs.forEach((tubId) => {
       metrics.forEach((metric) => {
         const latest = processedReadings.find(r => r.tub_id === tubId);
+        if (!latest) return;
         let val = 0;
-        let isHardcoded = false;
-        
-        if (latest) {
-          if (metric === 'Nitrogen') val = (latest.q_nutrient ?? 0.5) * 100;
-          if (metric === 'Phosphorus') val = (latest.q_moisture ?? 0.4) * 80;
-          if (metric === 'Potassium') val = (latest.q_climate ?? 0.6) * 90;
-        } else {
-          // Hardcoded fallbacks
-          isHardcoded = true;
-          if (metric === 'Nitrogen') val = 45 + Math.random() * 20;
-          if (metric === 'Phosphorus') val = 30 + Math.random() * 15;
-          if (metric === 'Potassium') val = 60 + Math.random() * 25;
-        }
-        
-        data.push({ 
-          x: metric, 
-          y: `${tubId}${isHardcoded ? ' (HC)' : ''}`, 
-          value: val,
-          source: isHardcoded ? 'Hardcoded' : 'Database'
-        });
+        if (metric === 'Nitrogen') val = (latest.q_nutrient ?? 0) * 100;
+        if (metric === 'Phosphorus') val = (latest.q_moisture ?? 0) * 80;
+        if (metric === 'Potassium') val = (latest.q_climate ?? 0) * 90;
+        data.push({ x: metric, y: `${tubId}`, value: val });
       });
     });
     return data;
@@ -292,43 +248,31 @@ function Analytics() {
   const riskMatrixData = useMemo(() => {
     if (healthByTub.length > 0) {
       return healthByTub.map(h => ({
-        x: (h.risk_t ?? 0.2) * 100,
-        y: (h.health_t ?? 0.8) * 100,
+        x: (h.risk_t ?? 0) * 100,
+        y: (h.health_t ?? 0) * 100,
         z: 1,
         name: `Tub ${h.tubId}`,
-        source: 'Database'
       }));
     }
-    // Hardcoded fallback
-    return [
-      { x: 15, y: 85, z: 1, name: 'Sample A (HC)', source: 'Hardcoded' },
-      { x: 45, y: 65, z: 1, name: 'Sample B (HC)', source: 'Hardcoded' },
-      { x: 82, y: 30, z: 1, name: 'Sample C (HC)', source: 'Hardcoded' },
-      { x: 22, y: 92, z: 1, name: 'Sample D (HC)', source: 'Hardcoded' },
-    ];
+    return [];
   }, [healthByTub]);
 
   const radarData = useMemo(() => {
-    const hasData = overview.avgHealthScore !== null;
+    if (overview.avgHealthScore === null) return [];
     return [
-      { subject: 'Moisture', value: (overview.avgHealthScore ?? 0.70) * 100, targetValue: 75 },
-      { subject: 'Climate', value: 85, targetValue: 80 },
-      { subject: 'Nutrient', value: 65, targetValue: 90 },
-      { subject: 'Yield', value: 92, targetValue: 85 },
-      { subject: 'Stability', value: 78, targetValue: 80 },
-    ].map(item => ({ ...item, isHardcoded: true })); // Majority is hardcoded for now
+      { subject: 'Health', value: overview.avgHealthScore * 100, targetValue: 80 },
+    ];
   }, [overview]);
 
   const yieldProjectionData = useMemo(() => {
-    // Simulated true 3D space points
-    return [
-      { x: 20, y: 30, z: 45, name: 'Tub 1 Root' },
-      { x: 50, y: 70, z: 85, name: 'Tub 3 Foliar' },
-      { x: 80, y: 20, z: 30, name: 'Tub 5 Stress' },
-      { x: 40, y: 50, z: 60, name: 'Tub 2 Growth' },
-      { x: 65, y: 85, z: 95, name: 'Tub 102 Peak' },
-    ];
-  }, []);
+    // Build 3D points from real health/risk scores
+    return healthByTub.map(h => ({
+      x: (h.risk_t ?? 0) * 100,
+      y: (h.health_t ?? 0) * 100,
+      z: ((1 - (h.stress_t ?? 0)) * 100),
+      name: `Tub ${h.tubId}`,
+    }));
+  }, [healthByTub]);
 
   const debugErrors = useMemo(() => {
     const out = {};
@@ -441,80 +385,132 @@ function Analytics() {
       {/* Advanced ML Analysis Grid */}
       <div className="grid grid-cols-12 gap-8">
         
-        {/* Row 1: Primary Metrics & Optimization (8-4 Split) */}
+        {/* Row 1: Primary Metrics (full width when no health data, otherwise 8-4 split) */}
         <div className="col-span-12 lg:col-span-8 relative">
-           <RadarAnalysis 
-             title="Global Agricultural Metrics"
-             subtitle="Multidimensional distribution across active tubs"
-             data={radarData}
-             targetData={true}
-           />
-           <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
-              <span className="text-[9px] font-black text-amber-500/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase shadow-lg">
-                Mixed Dataset (DB + HC)
-              </span>
-           </div>
+           {radarData.length > 0 ? (
+             <RadarAnalysis 
+               title="Global Health Index"
+               subtitle="Average health score across all active tubs vs 80% target"
+               data={radarData}
+               targetData={true}
+             />
+           ) : (
+             <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-white/5 flex items-center justify-center min-h-[300px]">
+               <div className="text-center">
+                 <div className="text-4xl mb-3 opacity-30">📊</div>
+                 <p className="text-slate-500 text-sm">No health scores in <span className="font-mono text-slate-400">ml.computed_scores</span> yet.</p>
+               </div>
+             </div>
+           )}
         </div>
 
+        {/* Right: Per-tub health summary from real DB data */}
         <div className="col-span-12 lg:col-span-4 flex flex-col h-full">
            <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-[32px] border border-white/5 flex flex-col h-full hover:border-emerald-500/20 transition-all shadow-2xl">
               <div className="mb-6 flex justify-between items-start">
                 <div>
                   <h3 className="text-xl font-black text-white uppercase tracking-tighter underline decoration-emerald-500/50 underline-offset-8">
-                    AI Optimization
+                    Tub Health Status
                   </h3>
-                  <p className="text-xs text-slate-500 mt-2">Model-driven smart signals</p>
+                  <p className="text-xs text-slate-500 mt-2">Latest ML scores from computed_scores</p>
                 </div>
-                <div className="px-2 py-1 bg-emerald-500/10 rounded border border-emerald-500/20 text-[9px] text-emerald-400 animate-pulse font-bold">LIVE</div>
+                <div className="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-[9px] text-slate-400 font-bold">
+                  {healthByTub.length} TUB{healthByTub.length !== 1 ? 'S' : ''}
+                </div>
               </div>
-              <div className="space-y-4 flex-1">
-                 {[
-                   { tub: 'Tub 3 Blue', rec: 'Increase nitrogen by 15%', status: 'Critical', color: 'rose' },
-                   { tub: 'Tub 1 Green', rec: 'Optimal pH reached', status: 'Stable', color: 'emerald' },
-                   { tub: 'Tub 102', rec: 'Check sensor drift (Moisture)', status: 'Warning', color: 'amber' },
-                   { tub: 'Tub 5 Red', rec: 'Boost local humidity', status: 'Action Required', color: 'blue' },
-                 ].map((r, i) => (
-                   <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/50 border border-white/5 hover:border-white/10 transition-all cursor-default group/item">
-                      <div className="flex flex-col">
-                         <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{r.tub}</span>
-                         <span className="text-sm font-bold text-white group-hover/item:text-emerald-400 transition-colors">{r.rec}</span>
+
+              {healthByTub.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-slate-600 text-sm text-center">
+                    No data in <span className="font-mono text-slate-500">ml.computed_scores</span>.
+                    <br />Run a sensing cycle to populate.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 flex-1 overflow-y-auto">
+                  {healthByTub.slice(0, 6).map((h) => {
+                    const health = typeof h.health_t === 'number' ? h.health_t : null;
+                    const risk   = typeof h.risk_t   === 'number' ? h.risk_t   : null;
+                    const status = risk !== null && risk >= 0.7 ? 'HIGH RISK'
+                      : health !== null && health >= 0.75 ? 'Healthy' : 'Monitor';
+                    const color = risk !== null && risk >= 0.7 ? 'rose'
+                      : health !== null && health >= 0.75 ? 'emerald' : 'amber';
+                    return (
+                      <div key={h.tubId} className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/50 border border-white/5 hover:border-white/10 transition-all">
+                         <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Tub {h.tubId}</span>
+                            <span className="text-sm font-bold text-white">
+                              {health !== null ? `Health: ${(health * 100).toFixed(0)}%` : 'No score'}
+                              {risk !== null ? ` · Risk: ${(risk * 100).toFixed(0)}%` : ''}
+                            </span>
+                         </div>
+                         <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-${color}-500/10 text-${color}-400 border border-${color}-500/20`}>
+                            {status}
+                         </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-${r.color}-500/10 text-${r.color}-400 border border-${r.color}-500/20`}>
-                         {r.status}
-                      </span>
-                   </div>
-                 ))}
-              </div>
-              <div className="mt-6 pt-6 border-t border-white/5 text-[10px] text-slate-600 font-mono flex justify-between uppercase tracking-tighter">
-                 <span>ML_KERNEL: v2.5.0-stable</span>
-                 <span className="text-emerald-500/70">SIGNAL_ACTIVE</span>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-6 pt-4 border-t border-white/5 text-[10px] text-slate-600 font-mono flex justify-between uppercase tracking-tighter">
+                 <span>SOURCE: ml.computed_scores</span>
+                 <span className="text-emerald-500/70">{healthByTub.length > 0 ? 'DATA_OK' : 'AWAITING'}</span>
               </div>
            </div>
         </div>
 
-        {/* Row 2: Secondary Visualizations (Equal 3-way or 4-span split) */}
+
+        {/* Row 2: Secondary Visualizations */}
         <div className="col-span-12 lg:col-span-6">
-           <NPKHeatmap 
-             title="Nutrient Intensity Profile"
-             subtitle="Heatmap distribution of N-P-K concentrations"
-             data={npkHeatmapData}
-           />
+           {npkHeatmapData.length > 0 ? (
+             <NPKHeatmap 
+               title="Nutrient Intensity Profile"
+               subtitle="Heatmap distribution of quality signals per tub"
+               data={npkHeatmapData}
+             />
+           ) : (
+             <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-white/5 flex items-center justify-center min-h-[300px]">
+               <div className="text-center">
+                 <div className="text-4xl mb-3 opacity-30">🧪</div>
+                 <p className="text-slate-500 text-sm">No data in <span className="font-mono text-slate-400">ml.processed_readings</span>.</p>
+               </div>
+             </div>
+           )}
         </div>
 
         <div className="col-span-12 lg:col-span-6">
-            <RiskMatrix 
-              title="Risk vs Yield Optimization"
-              subtitle="Modeling stress factors against expected productivity"
-              data={riskMatrixData}
-            />
+           {riskMatrixData.length > 0 ? (
+             <RiskMatrix 
+               title="Risk vs Health Distribution"
+               subtitle="Each dot is a tub — health (Y) vs risk (X) from latest ML scores"
+               data={riskMatrixData}
+             />
+           ) : (
+             <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-white/5 flex items-center justify-center min-h-[300px]">
+               <div className="text-center">
+                 <div className="text-4xl mb-3 opacity-30">⚠️</div>
+                 <p className="text-slate-500 text-sm">No risk/health scores in <span className="font-mono text-slate-400">ml.computed_scores</span>.</p>
+               </div>
+             </div>
+           )}
         </div>
 
         {/* Row 3: 3D Interactive Analytics */}
         <div className="col-span-12">
-            <Interactive3DGraph 
-              title="Interactive Growth Space projection"
-              data={yieldProjectionData}
-            />
+           {yieldProjectionData.length > 0 ? (
+             <Interactive3DGraph 
+               title="Interactive Growth Space Projection"
+               data={yieldProjectionData}
+             />
+           ) : (
+             <div className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-[40px] border border-white/5 flex items-center justify-center min-h-[200px]">
+               <div className="text-center">
+                 <div className="text-4xl mb-3 opacity-30">🌐</div>
+                 <p className="text-slate-500 text-sm">3D projection requires <span className="font-mono text-slate-400">ml.computed_scores</span> data.</p>
+               </div>
+             </div>
+           )}
         </div>
 
         {/* Row 4: Full Width Telemetry */}
@@ -523,45 +519,60 @@ function Analytics() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                   <h3 className="text-2xl font-black uppercase tracking-tighter text-white">Signal stack telemetry</h3>
-                  <p className="text-sm text-slate-500 mt-1">Multivariate feature stream for ML kernel inference</p>
+                  <p className="text-sm text-slate-500 mt-1">Multivariate quality signals from <span className="font-mono">ml.processed_readings</span></p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black tracking-widest border border-emerald-500/20">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                      LIVE_FEED
-                  </div>
-                  <div className="text-[10px] text-slate-600 font-mono hidden md:block">
-                      SYNC_PORT: 5173
-                  </div>
+                  {moistureSeries.length > 0 ? (
+                    <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black tracking-widest border border-emerald-500/20">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        LIVE_DATA · {moistureSeries.length} pts
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-800 text-slate-500 text-[10px] font-black tracking-widest border border-slate-700">
+                        NO_DATA
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={moistureSeries}>
-                    <defs>
-                      <linearGradient id="moisture" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="climate" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="nutrient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
-                    <Tooltip contentStyle={{ background: "#020617", border: "#1e293b", borderRadius: 12 }} />
-                    <Area type="monotone" dataKey="q_moisture" name="Moisture" stroke="#10b981" fill="url(#moisture)" strokeWidth={3} />
-                    <Area type="monotone" dataKey="q_climate" name="Climate" stroke="#0ea5e9" fill="url(#climate)" strokeWidth={3} />
-                    <Area type="monotone" dataKey="q_nutrient" name="Nutrient" stroke="#8b5cf6" fill="url(#nutrient)" strokeWidth={3} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {moistureSeries.length > 0 ? (
+                <div className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={moistureSeries}>
+                      <defs>
+                        <linearGradient id="moisture" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="climate" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="nutrient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <Tooltip contentStyle={{ background: "#020617", border: "#1e293b", borderRadius: 12 }} />
+                      <Area type="monotone" dataKey="q_moisture" name="Moisture Quality" stroke="#10b981" fill="url(#moisture)" strokeWidth={3} />
+                      <Area type="monotone" dataKey="q_climate" name="Climate Quality" stroke="#0ea5e9" fill="url(#climate)" strokeWidth={3} />
+                      <Area type="monotone" dataKey="q_nutrient" name="Nutrient Quality" stroke="#8b5cf6" fill="url(#nutrient)" strokeWidth={3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl mb-3 opacity-30">📡</div>
+                    <p className="text-slate-500 text-sm">
+                      No rows in <span className="font-mono text-slate-400">ml.processed_readings</span>.
+                      <br />Quality signals will appear here once the ML pipeline runs.
+                    </p>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
       </div>

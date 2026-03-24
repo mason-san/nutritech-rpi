@@ -4,6 +4,8 @@ import Home from "./pages/Home";
 import Experiments from "./pages/Experiments";
 import ExperimentDetails from "./pages/ExperimentDetails";
 import Analytics from "./pages/Analytics";
+import Thresholds from "./pages/Thresholds";
+import ExperimentComparison from "./pages/ExperimentComparison";
 
 /**
  * MAIN APP COMPONENT
@@ -28,6 +30,12 @@ function App(){
             path="/experiments/:experimentId"
             element={<ExperimentDetails />}
           />
+
+          {/* Sensor threshold configuration */}
+          <Route path="/thresholds" element={<Thresholds />} />
+
+          {/* Cross-experiment comparison analytics */}
+          <Route path="/compare" element={<ExperimentComparison />} />
         </Routes>
     </Layout>
   );

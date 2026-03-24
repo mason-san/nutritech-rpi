@@ -1,89 +1,118 @@
-import {NavLink} from "react-router-dom";
-function Layout({children}){
+import { NavLink } from "react-router-dom";
 
-    return (
-        <div className="min-h-screen bg-[#081028] text-slate-100">
-            {/* Top Navbar */}
-            <header className="sticky top-0 z-50 border-b border-slate-800 bg-[#081028]/80 backdrop-blur-md">
-                <div className="max-w-7xl mx-auto px-8 py-3 flex items-center justify-between">
+const NAV_LINKS = [
+  { to: "/",            label: "Tubs",        icon: "◈" },
+  { to: "/experiments", label: "Experiments", icon: "◉" },
+  { to: "/analytics",  label: "Analytics",   icon: "▦" },
+  { to: "/thresholds", label: "Thresholds",  icon: "◎" },
+  { to: "/compare",    label: "Compare",     icon: "⇌" },
+];
 
-                    {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                            📊  
-                        </div>
-                        <h1 className="text-xl font-semibold">
-                            NutriTech <span className="text-emerald-400">Dashboard</span>
-                        </h1>
-                    </div>
+function Layout({ children }) {
+  return (
+    <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
 
-                    {/* Navigation Tabs */}
-                    <nav className="flex items-center gap-6">
-                        <a
-                            href="https://nutritech-dashboard.onrender.com/"
-                            className="text-slate-400 hover:text-white transition-colors"
-                        >
-                            Home
-                        </a>
+      {/* ── Top Nav ─────────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-50"
+        style={{
+          background: "rgba(2,11,24,0.75)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(16,185,129,0.12)",
+          boxShadow: "0 1px 0 rgba(16,185,129,0.06), 0 4px 24px rgba(0,0,0,0.4)",
+        }}
+      >
+        {/* Subtle top glow line */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+          background: "linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.5) 50%, transparent 100%)",
+        }} />
 
-                        <NavLink
-                            to="/"
-                            className={({ isActive }) =>
-                                isActive
-                                    ? "px-4 py-2  rounded-lg bg-emerald-500 text-black font-medium"
-                                    : "text-slate-400 hover:text-white"
-                            }
-                        >
-                            Tubs
-                        </NavLink>
+        <div className="max-w-screen-xl mx-auto px-8 py-0 flex items-center justify-between" style={{ height: 60 }}>
 
-                        <NavLink
-                            to="/experiments"
-                            className={({ isActive }) =>
-                                isActive
-                                    ? "px-4 py-2  rounded-lg bg-emerald-500 text-black font-medium"
-                                    : "text-slate-400 hover:text-white"
-                            }
-                        >
-                            Experiments
-                        </NavLink>
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div style={{
+              width: 38, height: 38,
+              background: "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.15))",
+              border: "1px solid rgba(16,185,129,0.3)",
+              borderRadius: 10,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16,
+              boxShadow: "0 0 12px rgba(16,185,129,0.2)",
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.1em" }}>NT</span>
+            </div>
+            <div>
+              <span className="text-lg font-black tracking-tight text-white">NutriTech</span>
+              <span className="gradient-text text-lg font-black tracking-tight"> Dashboard</span>
+            </div>
+          </div>
 
-                        <NavLink
-                            to="/analytics"
-                            className={({ isActive }) =>
-                                isActive
-                                    ? "px-4 py-2  rounded-lg bg-emerald-500 text-black font-medium"
-                                    : "text-slate-400 hover:text-white"
-                            }
-                        >
-                            ML Analytics
-                        </NavLink>
-                    </nav>
+          {/* Nav links */}
+          <nav className="flex items-center gap-1">
+            {NAV_LINKS.map(({ to, label, icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                className={({ isActive }) =>
+                  isActive
+                    ? "nav-pill-active flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm"
+                    : "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm text-slate-400 hover:text-white transition-all duration-200 hover:bg-white/5"
+                }
+              >
+                <span className="text-[13px]">{icon}</span>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
 
-                    {/* Right Size */}
-                    <div className="flex items-center gap-6">
-                        <div className="px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-xs text-emerald-400 flex items-center gap-2">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            System Online
-                        </div>
+          {/* Right: status + user */}
+          <div className="flex items-center gap-4">
+            {/* Live pill */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "4px 12px",
+              borderRadius: 99,
+              background: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.2)",
+              fontSize: 11, fontWeight: 700, color: "#34d399",
+              letterSpacing: "0.08em", textTransform: "uppercase",
+            }}>
+              <span style={{ position: "relative", display: "inline-flex", width: 7, height: 7 }}>
+                <span style={{
+                  position: "absolute", inset: 0, borderRadius: "50%",
+                  background: "#10b981", animation: "ping 1.5s cubic-bezier(0,0,0.2,1) infinite", opacity: 0.75,
+                }} />
+                <span style={{ position: "relative", width: 7, height: 7, borderRadius: "50%", background: "#10b981" }} />
+              </span>
+              Live
+            </div>
 
-                        <div className="text-right">
-                            <p className="text-sm font-medium">Admin User</p>
-                            <p className="text-xs text-slate-400">KIOSK MODE</p>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* User badge */}
+            <div style={{
+              padding: "4px 14px",
+              borderRadius: 99,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              fontSize: 11, color: "#94a3b8",
+              fontWeight: 600, letterSpacing: "0.06em",
+            }}>
+              ADMIN
+            </div>
+          </div>
 
-            {/* Page Content */}
-            <main className="max-w-7xl mx-auto px-8 py-10">
-                {children}
-            </main>
         </div>
-    ); 
+      </header>
+
+      {/* ── Page content ─────────────────────────────────────────── */}
+      <main className="max-w-screen-xl mx-auto px-8 py-10 fade-in">
+        {children}
+      </main>
+    </div>
+  );
 }
 
 export default Layout;
