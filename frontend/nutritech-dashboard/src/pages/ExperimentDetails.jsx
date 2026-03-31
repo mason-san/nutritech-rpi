@@ -52,6 +52,7 @@ const METRICS = [
     table: "sensor_data",
     field: "potassium",
   },
+  { id: "water_temp", label: "Water Temp", table: "sensor_data", field: "water_temp" },
   { id: "health", label: "Health (sensor)", table: "sensor_data", field: "health" },
   { id: "risk_t", label: "Risk (model)", table: "computed_scores", field: "risk_t" },
   {
@@ -114,14 +115,15 @@ function descStats(arr) {
 
 // Sensor fields used in correlation / distribution analysis
 const CORR_FIELDS = [
-  { key: 'soil_ph',       short: 'pH',    label: 'Soil pH',     unit: 'pH'     },
-  { key: 'soil_moisture', short: 'Moist', label: 'Moisture',    unit: '%'      },
-  { key: 'soil_temp',     short: 'STemp', label: 'Soil Temp',   unit: '\u00b0C' },
-  { key: 'air_temp',      short: 'ATemp', label: 'Air Temp',    unit: '\u00b0C' },
-  { key: 'air_humidity',  short: 'Humid', label: 'Humidity',    unit: '%'      },
-  { key: 'nitrogen',      short: 'N',     label: 'Nitrogen',    unit: 'mg/kg'  },
-  { key: 'phosphorus',    short: 'P',     label: 'Phosphorus',  unit: 'mg/kg'  },
-  { key: 'potassium',     short: 'K',     label: 'Potassium',   unit: 'mg/kg'  },
+  { key: 'soil_ph',      short: 'pH',    label: 'Soil pH',     unit: 'pH'      },
+  { key: 'soil_moisture',short: 'Moist', label: 'Moisture',    unit: '%'       },
+  { key: 'soil_temp',    short: 'STemp', label: 'Soil Temp',   unit: '\u00b0C' },
+  { key: 'water_temp',   short: 'WTemp', label: 'Water Temp',  unit: '\u00b0C' },
+  { key: 'air_temp',     short: 'ATemp', label: 'Air Temp',    unit: '\u00b0C' },
+  { key: 'air_humidity', short: 'Humid', label: 'Humidity',    unit: '%'       },
+  { key: 'nitrogen',     short: 'N',     label: 'Nitrogen',    unit: 'mg/kg'   },
+  { key: 'phosphorus',   short: 'P',     label: 'Phosphorus',  unit: 'mg/kg'   },
+  { key: 'potassium',    short: 'K',     label: 'Potassium',   unit: 'mg/kg'   },
 ];
 
 // Cell background color: green = positive corr, red = negative
@@ -227,7 +229,7 @@ function ExperimentDetails() {
     }
 
     const common = metric.table === "sensor_data"
-      ? "tub_id,created_at,soil_ph,soil_moisture,soil_temp,air_temp,air_humidity,nitrogen,phosphorus,potassium,health"
+      ? "tub_id,created_at,soil_ph,soil_moisture,soil_temp,water_temp,air_temp,air_humidity,nitrogen,phosphorus,potassium,health"
       : "tub_id,timestamp,health_t,stress_t,risk_t";
 
     const timeField = metric.table === "sensor_data" ? "created_at" : "timestamp";

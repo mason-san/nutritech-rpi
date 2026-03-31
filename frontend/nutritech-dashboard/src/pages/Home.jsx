@@ -83,7 +83,7 @@ function Home() {
         queryAnySchema("sensor_data", (q) =>
           q
             .select(
-              "tub_id,created_at,soil_moisture,soil_temp,soil_ph,soil_ec,water_ph,air_temp,air_humidity,nitrogen,phosphorus,potassium"
+              "tub_id,created_at,soil_moisture,soil_temp,soil_ph,soil_ec,water_ph,water_temp,air_temp,air_humidity,nitrogen,phosphorus,potassium,dbg_soil,dbg_npk"
             )
             .order("created_at", { ascending: false })
             .limit(500)
@@ -208,6 +208,9 @@ function Home() {
           nitrogen: s?.nitrogen ?? null,
           phosphorus: s?.phosphorus ?? null,
           potassium: s?.potassium ?? null,
+          water_temp: s?.water_temp ?? null,
+          dbg_soil: s?.dbg_soil ?? null,
+          dbg_npk: s?.dbg_npk ?? null,
           updated_at: s?.created_at ?? t.updated_at ?? null,
         };
       });
@@ -597,10 +600,11 @@ function Home() {
                 {[
                   ["soil_moisture", "Moisture", "%"],
                   ["soil_temp", "Soil Temp", "°C"],
-                  ["soil_ph", "Soil pH", "ph"],
+                  ["soil_ph", "Soil pH", "pH"],
                   ["air_temp", "Air Temp", "°C"],
                   ["air_humidity", "Humidity", "%"],
                   ["nitrogen", "Nitrogen", "mg/kg"],
+                  ["water_temp", "Water Temp", "°C"],
                 ].map(([k, label, unit]) => {
                   const latest = modalDetails?.history?.[0]?.[k];
                   return (
@@ -641,6 +645,34 @@ function Home() {
                  );
                })()}
             </div>
+
+            {/* Raw Sensor Packets */}
+            {(() => {
+              const latest = modalDetails?.history?.[0];
+              const hasDgb = latest?.dbg_soil || latest?.dbg_npk;
+              if (!hasDgb) return null;
+              return (
+                <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-3">
+                    Raw Sensor Packets
+                  </div>
+                  <div className="space-y-2">
+                    {latest?.dbg_soil && (
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] text-slate-500 font-mono w-16 shrink-0 pt-0.5">SOIL</span>
+                        <span className="text-[11px] font-mono text-emerald-300/80 break-all">{latest.dbg_soil}</span>
+                      </div>
+                    )}
+                    {latest?.dbg_npk && (
+                      <div className="flex items-start gap-3">
+                        <span className="text-[10px] text-slate-500 font-mono w-16 shrink-0 pt-0.5">NPK</span>
+                        <span className="text-[11px] font-mono text-cyan-300/80 break-all">{latest.dbg_npk}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="mt-10 pt-10 border-t border-white/5 flex items-center justify-between">
               <div className="text-[10px] text-slate-600 font-mono">

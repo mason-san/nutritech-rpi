@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-const HOME_URL = "https://nutritech-dashboard.onrender.com/";
+const HOME_URL = "https://nutritech-dashboard-ef8h.onrender.com/";
 
 const NAV_LINKS = [
   { to: "/",            label: "Tubs",        icon: "◈" },
@@ -54,18 +54,6 @@ function Layout({ children }) {
 
           {/* Nav links */}
           <nav className="flex items-center gap-1">
-            {/* Home button — external link to main landing page */}
-            <a
-              href={HOME_URL}
-              target="_self"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm text-slate-400 hover:text-white transition-all duration-200 hover:bg-white/5"
-              style={{ textDecoration: "none" }}
-            >
-              <span className="text-[13px]">⌂</span>
-              Home
-            </a>
-
             {NAV_LINKS.map(({ to, label, icon }) => (
               <NavLink
                 key={to}
@@ -85,6 +73,18 @@ function Layout({ children }) {
 
           {/* Right: status + user */}
           <div className="flex items-center gap-4">
+            {/* Home button — external link to main landing page */}
+            <a
+              href={HOME_URL}
+              target="_self"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all duration-200 hover:bg-white/5 border border-white/5 hover:border-white/10"
+              style={{ textDecoration: "none" }}
+            >
+              <span className="text-[13px]">⌂</span>
+              Home
+            </a>
+
             {/* Live pill */}
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
